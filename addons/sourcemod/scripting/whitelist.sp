@@ -51,6 +51,8 @@ public void OnPluginStart()
 	gCV_AllowAdmins = new Convar("whitelist_allow_admins", "1", "Whether admins (with the ban flag) are allowed to join.", 0, true, 0.0, true, 1.0);
 	gCV_KickMessage = new Convar("whitelist_kick_message", "You are not in the server's whitelist", "The kick-message used.");
 
+	Convar.AutoExecConfig();
+
 	sv_password = FindConVar("sv_password");
 
 	CreateTimer(2.5 * 60.0, Timer_ReloadWhitelist, 0, TIMER_REPEAT);
