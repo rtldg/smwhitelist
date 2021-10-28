@@ -48,7 +48,7 @@ public void OnPluginStart()
 	RegAdminCmd("sm_whitelistdel", Command_WhitelistDelete, ADMFLAG_ROOT, "desc");
 
 	gCV_Enabled = new Convar("whitelist_enabled", "1", "Turn on or off the whitelist", 0, true, 0.0, true, 1.0);
-	gCV_AllowAdmins = new Convar("whitelist_allow_admins", "1", "Whether admins are allowed to join.", 0, true, 0.0, true, 1.0);
+	gCV_AllowAdmins = new Convar("whitelist_allow_admins", "1", "Whether admins (with the ban flag) are allowed to join.", 0, true, 0.0, true, 1.0);
 	gCV_KickMessage = new Convar("whitelist_kick_message", "You are not in the server's whitelist", "The kick-message used.");
 
 	sv_password = FindConVar("sv_password");
