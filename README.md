@@ -1,8 +1,8 @@
 # smwhitelist
 
-this was created because serverwhitelistadvanced checks steam groups & ids very late. sometimes it never checks so players can join even though they're not in a whitelist group. great extension.
+this was created because serverwhitelistadvanced checks steam groups & ids very late. sometimes it never checks so players can join even though they're not in a whitelist group. great plugin.
 
-so we cache steamids from steam groups and check steamids before the client actually joins the game & before the client auth forward (thanks to the connect extension)
+this uses the connect extension & also caches steamids from steam groups so we can check before the client actually joins the game and before the OnClientAuthorized forward triggers
 
 ## to use
 create sourcemod/configs/whitelist.txt & fill it with steamids, ips, and group ids
