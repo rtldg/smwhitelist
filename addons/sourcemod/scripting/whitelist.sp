@@ -84,7 +84,7 @@ stock int SteamID64ToAccountID(const char[] steamid64)
 	int num[2];
 	kv.SetString(NULL_STRING, steamid64);
 	kv.GetUInt64(NULL_STRING, num);
-	return num[0] & 0x7FFFFFFF;
+	return num[0];
 }
 
 // Retrieves accountid from STEAM_X:Y:Z, [U:1:123], and 765xxxxxxxxxxxxxx
