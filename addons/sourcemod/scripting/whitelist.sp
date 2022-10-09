@@ -1,3 +1,23 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright 2021-2022 rtldg <rtldg@protonmail.com>
+
+// Added this because I'd occasionally get errors when SteamWorks tries
+// to push the response string...
+#pragma dynamic 69696
+// from: 
+//   Stack/heap size:      16384 bytes
+//   Total requirements:   41884 bytes
+// to:
+//   Stack/heap size:     278784 bytes
+//   Total requirements:  304284 bytes
+// .... that should be good enough ....
+/*
+L 10/04/2022 - 15:20:16: [SM] Exception reported: Not enough space on the heap
+L 10/04/2022 - 15:20:16: [SM] Blaming: whitelist.smx
+L 10/04/2022 - 15:20:16: [SM] Call stack trace:
+L 10/04/2022 - 15:20:16: [SM]   [0] SteamWorks_GetHTTPResponseBodyCallback
+L 10/04/2022 - 15:20:16: [SM]   [1] Line 156, .\whitelist.sp::RequestCompletedCallback
+*/
 
 #include <sourcemod>
 
@@ -26,7 +46,7 @@ public Plugin myinfo =
 	name = "generic whitelist",
 	author = "rtldg",
 	description = "A generic whitelist plugin.",
-	version = "1.0.0",
+	version = "1.0.1",
 	url = "https://github.com/rtldg/smwhitelist"
 }
 
