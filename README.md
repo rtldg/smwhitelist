@@ -9,6 +9,7 @@ create sourcemod/configs/whitelist.txt & fill it with steamids, ips, and group i
 
 you need
 - SteamWorks https://github.com/KyleSanderson/SteamWorks/releases
+  - Windows builds: https://users.alliedmods.net/~kyles/builds/SteamWorks/
 - the connect extension
   - https://forums.alliedmods.net/showthread.php?t=162489&page=36#351
   - for css rename this to `connect.ext.2.css.so`/`connect.ext.2.css.dll`
