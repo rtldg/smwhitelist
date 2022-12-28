@@ -1,0 +1,8 @@
+
+;STEAM_0:0:1 ; random person
+;[U:1:2]     ; (same) random person
+
+;123.123.123.123 ; ip obv
+
+;868539 ; MONSTERJAMRULES steam group id
+;103582791429521412 ; 64-bit Valve group id

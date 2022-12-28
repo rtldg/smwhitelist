@@ -1,10 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright 2021-2022 rtldg <rtldg@protonmail.com>
 
+#define FOR_CSGO 1
+
 // Added this because I'd occasionally get errors when SteamWorks tries
 // to push the response string...
 #pragma dynamic 69696
-// from: 
+// from:
 //   Stack/heap size:      16384 bytes
 //   Total requirements:   41884 bytes
 // to:
@@ -21,10 +23,16 @@ L 10/04/2022 - 15:20:16: [SM]   [1] Line 156, .\whitelist.sp::RequestCompletedCa
 
 #include <sourcemod>
 
+#include <sourcemod>
+
 #include <convar_class>
 
 #define REQUIRE_EXTENSIONS
+#if FOR_CSGO
+#include <PTaH>
+#else
 #include <connect>
+#endif
 #include <SteamWorks>
 
 #pragma semicolon 1
@@ -46,7 +54,7 @@ public Plugin myinfo =
 	name = "generic whitelist",
 	author = "rtldg",
 	description = "A generic whitelist plugin.",
-	version = "1.0.1",
+	version = "1.1.0",
 	url = "https://github.com/rtldg/smwhitelist"
 }
 
@@ -72,6 +80,10 @@ public void OnPluginStart()
 	gCV_KickMessage = new Convar("whitelist_kick_message", "You are not in the server's whitelist", "The kick-message used.");
 
 	Convar.AutoExecConfig();
+
+#if FOR_CSGO
+	PTaH(PTaH_ClientConnectPre, Hook, ONCLIENTCONNECTPREFUCK);
+#endif
 
 	sv_password = FindConVar("sv_password");
 
@@ -105,6 +117,11 @@ stock int SteamID64ToAccountID(const char[] steamid64)
 	kv.SetString(NULL_STRING, steamid64);
 	kv.GetUInt64(NULL_STRING, num);
 	return num[0];
+}
+
+stock void AccountIDToSteamID2(int accountid, char[] buf, int buflen)
+{
+	FormatEx(buf, buflen, "STEAM_0:%d:%d", accountid&1, (accountid>>1) & 0x7FFFFFFF);
 }
 
 // Retrieves accountid from STEAM_X:Y:Z, [U:1:123], and 765xxxxxxxxxxxxxx
@@ -233,7 +250,8 @@ void ReloadWhitelistFile()
 		{
 			gSM_WhitelistedIPs.SetValue(buffer, true);
 		}
-		else if (StrContains(buffer, "STEAM_") != -1 || StrContains(buffer, "[U:") != -1)
+		else if (StrContains(buffer, "STEAM_") == 0 || StrContains(buffer, "[U:") == 0
+				|| (StrContains(buffer, "765") == 0) && strlen(buffer) == 17)
 		{
 			AddAccountIDToWhitelist(SteamIDToAccountID(buffer));
 		}
@@ -244,6 +262,9 @@ void ReloadWhitelistFile()
 				PrintToServer("Tried to parse Steam Group ID but value includes a non-number. '%s'", buffer);
 				continue;
 			}
+
+			// in case someone uses a 64-bit groupid...
+			IntToString(SteamID64ToAccountID(buffer), buffer, sizeof(buffer));
 
 			gSM_WhitelistedGroups.SetValue(buffer, true);
 
@@ -481,19 +502,34 @@ public Action Command_WhitelistDelete(int client, int args)
 	return Plugin_Handled;
 }
 
+public int SteamWorks_OnValidateClient(int ownerauthid, int authid)
+{
+	//PrintToServer("SteamWorks_OnValidateClient %d %d", ownerauthid, authid);
+}
+
+#if !FOR_CSGO
 public bool OnClientPreConnectEx(const char[] name, char password[255], const char[] ip, const char[] steamID, char rejectReason[255])
+{
+	int account_id = SteamIDToAccountID(steamID);
+	return ONCLIENTCONNECTPREFUCK(account_id, ip, name, password, rejectReason) != Plugin_Stop;
+}
+
+public Action ONCLIENTCONNECTPREFUCK(int account_id, const char[] ip, const char[] name, char password[255], char rejectReason[255])
+#else
+public Action ONCLIENTCONNECTPREFUCK(int account_id, const char[] ip, const char[] name, char password[128], char rejectReason[255])
+#endif
 {
 	//PrintToServer("----------------\nName: %s\nPassword: %s\nIP: %s\nSteamID: %s\n----------------", name, password, ip, steamID);
 
 	if (!gCV_Enabled.BoolValue)
 	{
-		return true;
+		return Plugin_Continue;
 	}
 
 	if (!gB_WhitelistCached)
 	{
 		strcopy(rejectReason, sizeof(rejectReason), "Whitelist not cached");
-		return false;
+		return Plugin_Stop;
 	}
 
 	bool asdf;
@@ -501,21 +537,21 @@ public bool OnClientPreConnectEx(const char[] name, char password[255], const ch
 	if (gSM_WhitelistedIPs.GetValue(ip, asdf))
 	{
 		PrintToServer("Whitelisted IP");
-		return true;
+		return Plugin_Continue;
 	}
 
-	int account_id = SteamIDToAccountID(steamID);
-	char buffer[20];
+	char buffer[40];
 	IntToString(account_id, buffer, sizeof(buffer));
 
 	if (gSM_WhitelistedSteamIDs.GetValue(buffer, asdf))
 	{
 		PrintToServer("Whitelisted SteamID");
-		return true;
+		return Plugin_Continue;
 	}
 
 #if 1
-	AdminId admin = FindAdminByIdentity(AUTHMETHOD_STEAM, steamID);
+	AccountIDToSteamID2(account_id, buffer, sizeof(buffer));
+	AdminId admin = FindAdminByIdentity(AUTHMETHOD_STEAM, buffer);
 
 	if (admin != INVALID_ADMIN_ID)
 	{
@@ -523,18 +559,18 @@ public bool OnClientPreConnectEx(const char[] name, char password[255], const ch
 		{
 			PrintToServer("Whitelisted by Admin Root Flag");
 			sv_password.GetString(password, sizeof(password));
-			return true;
+			return Plugin_Changed;
 		}
 
 		if (admin.HasFlag(Admin_Ban) && gCV_AllowAdmins.BoolValue)
 		{
 			PrintToServer("Whitelisted by Admin Ban Flag");
 			sv_password.GetString(password, sizeof(password));
-			return true;
+			return Plugin_Changed;
 		}
 	}
 #endif
 
 	gCV_KickMessage.GetString(rejectReason, sizeof(rejectReason));
-	return false;
+	return Plugin_Stop;
 }
