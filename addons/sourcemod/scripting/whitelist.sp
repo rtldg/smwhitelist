@@ -48,22 +48,27 @@ StringMap gSM_WhitelistedSteamIDs = null;
 StringMap gSM_WhitelistedIPs = null;
 
 bool gB_WhitelistCached = false;
+
+#if FOR_CSGO
 int gI_MapsChanged = 0;
+#endif
 
 public Plugin myinfo =
 {
 	name = "generic whitelist",
 	author = "rtldg",
 	description = "A generic whitelist plugin.",
-	version = "1.1.1",
+	version = "1.1.2",
 	url = "https://github.com/rtldg/smwhitelist"
 }
 
+#if FOR_CSGO
 public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max)
 {
 	gI_MapsChanged = late ? 1 : 0;
 	return APLRes_Success;
 }
+#endif
 
 public void OnPluginStart()
 {
@@ -96,18 +101,18 @@ public void OnPluginStart()
 
 	CreateTimer(2.5 * 60.0, Timer_ReloadWhitelist, 0, TIMER_REPEAT);
 
-	ReloadWhitelistFile(false);
+	ReloadWhitelistFile(!FOR_CSGO);
 }
 
+#if FOR_CSGO
 public void OnMapStart()
 {
-#if FOR_CSGO
 	// CS:GO does a dumb double-map-reload thing on server-start...
 	// steamworks requests fail before this point?
 	if (++gI_MapsChanged >= 2)
 		ReloadWhitelistFile();
-#endif
 }
+#endif
 
 public Action Timer_ReloadWhitelist(Handle timer, any data)
 {
