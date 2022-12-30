@@ -48,14 +48,21 @@ StringMap gSM_WhitelistedSteamIDs = null;
 StringMap gSM_WhitelistedIPs = null;
 
 bool gB_WhitelistCached = false;
+int gI_MapsChanged = 0;
 
 public Plugin myinfo =
 {
 	name = "generic whitelist",
 	author = "rtldg",
 	description = "A generic whitelist plugin.",
-	version = "1.1.0",
+	version = "1.1.1",
 	url = "https://github.com/rtldg/smwhitelist"
+}
+
+public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max)
+{
+	gI_MapsChanged = late ? 1 : 0;
+	return APLRes_Success;
 }
 
 public void OnPluginStart()
@@ -89,7 +96,17 @@ public void OnPluginStart()
 
 	CreateTimer(2.5 * 60.0, Timer_ReloadWhitelist, 0, TIMER_REPEAT);
 
-	ReloadWhitelistFile();
+	ReloadWhitelistFile(false);
+}
+
+public void OnMapStart()
+{
+#if FOR_CSGO
+	// CS:GO does a dumb double-map-reload thing on server-start...
+	// steamworks requests fail before this point?
+	if (++gI_MapsChanged >= 2)
+		ReloadWhitelistFile();
+#endif
 }
 
 public Action Timer_ReloadWhitelist(Handle timer, any data)
@@ -108,6 +125,10 @@ void AddAccountIDToWhitelist(int accountid)
 
 stock int SteamID64ToAccountID(const char[] steamid64)
 {
+#if FOR_CSGO
+	int num[2];
+	StringToInt64(steamid64, num);
+#else
 	static KeyValues kv = null;
 
 	if (kv == null)
@@ -116,6 +137,7 @@ stock int SteamID64ToAccountID(const char[] steamid64)
 	int num[2];
 	kv.SetString(NULL_STRING, steamid64);
 	kv.GetUInt64(NULL_STRING, num);
+#endif
 	return num[0];
 }
 
@@ -211,7 +233,7 @@ void RequestGroupXml(const char[] url, const char[] groupid)
 	}
 }
 
-void ReloadWhitelistFile()
+void ReloadWhitelistFile(bool groups=true)
 {
 	gB_WhitelistCached = false;
 
@@ -255,7 +277,7 @@ void ReloadWhitelistFile()
 		{
 			AddAccountIDToWhitelist(SteamIDToAccountID(buffer));
 		}
-		else // should be group id
+		else if (groups) // should be group id
 		{
 			if (!IsStrNumbers(buffer))
 			{
@@ -519,7 +541,7 @@ public Action ONCLIENTCONNECTPREFUCK(int account_id, const char[] ip, const char
 public Action ONCLIENTCONNECTPREFUCK(int account_id, const char[] ip, const char[] name, char password[128], char rejectReason[255])
 #endif
 {
-	//PrintToServer("----------------\nName: %s\nPassword: %s\nIP: %s\nSteamID: %s\n----------------", name, password, ip, steamID);
+	//PrintToServer("----------------\nName: %s\nPassword: %s\nIP: %s\nSteamID: %d\n----------------", name, password, ip, account_id);
 
 	if (!gCV_Enabled.BoolValue)
 	{
