@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright 2021-2022 rtldg <rtldg@protonmail.com>
+// Copyright 2021-2023 rtldg <rtldg@protonmail.com>
 
 #define FOR_CSGO 1
 
@@ -45,9 +45,11 @@ ConVar sv_password = null;
 
 StringMap gSM_WhitelistedGroups = null;
 StringMap gSM_WhitelistedSteamIDs = null;
+StringMap gSM_WhitelistedSteamIDsStale = null;
 StringMap gSM_WhitelistedIPs = null;
 
 bool gB_WhitelistCached = false;
+bool gB_PulledLatest = false;
 
 #if FOR_CSGO
 int gI_MapsChanged = 0;
@@ -58,7 +60,7 @@ public Plugin myinfo =
 	name = "generic whitelist",
 	author = "rtldg",
 	description = "A generic whitelist plugin.",
-	version = "1.1.2",
+	version = "1.2.0",
 	url = "https://github.com/rtldg/smwhitelist"
 }
 
@@ -215,9 +217,13 @@ public void RequestCompletedCallback(Handle request, bool bFailure, bool bReques
 {
 	if (bFailure || !bRequestSuccessful || eStatusCode != k_EHTTPStatusCode200OK)
 	{
-		LogError("Group XML page request failed.");
+		CreateTimer(20.0, Timer_ReloadWhitelist);
+		LogError("Group XML page request failed. Retrying in 20s...");
 		return;
 	}
+
+	gB_PulledLatest = true; // there might be problems if multiple whitelist groups are used...
+	delete gSM_WhitelistedSteamIDsStale;
 
 	SteamWorks_GetHTTPResponseBodyCallback(request, ResponseBodyCallback, request);
 }
@@ -241,6 +247,15 @@ void RequestGroupXml(const char[] url, const char[] groupid)
 void ReloadWhitelistFile(bool groups=true)
 {
 	gB_WhitelistCached = false;
+
+	if (gB_PulledLatest)
+	{
+		delete gSM_WhitelistedSteamIDsStale;
+		gSM_WhitelistedSteamIDsStale = gSM_WhitelistedSteamIDs;
+		gSM_WhitelistedSteamIDs = null;
+	}
+
+	gB_PulledLatest = true; // unless we hit a group in the config...
 
 	delete gSM_WhitelistedGroups;
 	delete gSM_WhitelistedSteamIDs;
@@ -302,6 +317,7 @@ void ReloadWhitelistFile(bool groups=true)
 			);
 
 			RequestGroupXml(request_url, buffer);
+			gB_PulledLatest = false;
 		}
 	}
 
@@ -570,10 +586,21 @@ public Action ONCLIENTCONNECTPREFUCK(int account_id, const char[] ip, const char
 	char buffer[40];
 	IntToString(account_id, buffer, sizeof(buffer));
 
-	if (gSM_WhitelistedSteamIDs.GetValue(buffer, asdf))
+	if (!gSM_WhitelistedSteamIDsStale || gB_PulledLatest)
 	{
-		PrintToServer("Whitelisted SteamID");
-		return Plugin_Continue;
+		if (gSM_WhitelistedSteamIDs.GetValue(buffer, asdf))
+		{
+			PrintToServer("Whitelisted SteamID");
+			return Plugin_Continue;
+		}
+	}
+	else
+	{
+		if (gSM_WhitelistedSteamIDsStale.GetValue(buffer, asdf))
+		{
+			PrintToServer("Whitelisted SteamID");
+			return Plugin_Continue;
+		}
 	}
 
 #if 1
