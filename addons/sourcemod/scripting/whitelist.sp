@@ -60,7 +60,7 @@ public Plugin myinfo =
 	name = "generic whitelist",
 	author = "rtldg",
 	description = "A generic whitelist plugin.",
-	version = "1.2.0",
+	version = "1.2.1",
 	url = "https://github.com/rtldg/smwhitelist"
 }
 
@@ -210,6 +210,17 @@ void ResponseBodyCallback(const char[] data, any hRequest)
 		pos = end + sizeof(searchcloser) - 1;
 
 		AddAccountIDToWhitelist(SteamID64ToAccountID(steamid));
+	}
+
+	char nextPageLink[] = "<nextPageLink><![CDATA[";
+	int next_page = StrContains(data, nextPageLink);
+
+	if (next_page != -1)
+	{
+		next_page += sizeof(nextPageLink) - 1;
+		char link[256];
+		strcopy(link, FindCharInString(data[next_page], ']') + 1, data[next_page]);
+		RequestGroupXml(link, link);
 	}
 }
 
