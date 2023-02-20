@@ -51,6 +51,7 @@ StringMap gSM_WhitelistedIPs = null;
 
 bool gB_WhitelistCached = false;
 bool gB_PulledLatest = false;
+bool gB_Late = false;
 
 #if FOR_CSGO
 int gI_MapsChanged = 0;
@@ -61,17 +62,18 @@ public Plugin myinfo =
 	name = "generic whitelist",
 	author = "rtldg",
 	description = "A generic whitelist plugin.",
-	version = "1.2.4",
+	version = "1.3.0",
 	url = "https://github.com/rtldg/smwhitelist"
 }
 
-#if FOR_CSGO
 public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max)
 {
+	gB_Late = late;
+#if FOR_CSGO
 	gI_MapsChanged = late ? 1 : 0;
+#endif
 	return APLRes_Success;
 }
-#endif
 
 public void OnPluginStart()
 {
@@ -105,8 +107,21 @@ public void OnPluginStart()
 
 	CreateTimer(2.5 * 60.0, Timer_ReloadWhitelist, 0, TIMER_REPEAT);
 
-	ReloadWhitelistFile(!FOR_CSGO);
+	if (!gB_Late) ReloadWhitelistFile(false);
 }
+
+#if !FOR_CSGO
+public void OnConfigsExecuted()
+{
+	// I'm going to fucking scream
+	static bool fuck = false;
+	if (!fuck)
+	{
+		fuck = true;
+		ReloadWhitelistFile(true);
+	}
+}
+#endif
 
 #if FOR_CSGO
 public void OnMapStart()
@@ -197,8 +212,9 @@ void ParseMemberProxy(const char[] data)
 	{
 		int end = StrContains(data[pos], " ", true) + 1;
 		char steamid[64];
-		strcopy(steamid, end ? end : strlen(data[pos]), data[pos]);
+		strcopy(steamid, end ? end : (strlen(data[pos]) + 1), data[pos]);
 		pos += end;
+		// PrintToServer("adding '%s'", steamid);
 		AddAccountIDToWhitelist(SteamID64ToAccountID(steamid));
 		if (!end) return;
 	}
@@ -267,7 +283,11 @@ public void RequestCompletedCallback(Handle request, bool bFailure, bool bReques
 void RequestGroupXml(const char[] url, const char[] groupid)
 {
 	char newurl[333];
-	FormatEx(newurl, sizeof(newurl), "%s&x=%d", url, GetURandomInt() % 69420); // cache-busting with query params
+	if (StrEqual(groupid, "memberproxy"))
+		strcopy(newurl, sizeof(newurl), url);
+	else
+		FormatEx(newurl, sizeof(newurl), "%s&x=%d", url, GetURandomInt() % 69420); // cache-busting with query params
+	// PrintToServer("query '%s'", newurl);
 	Handle request;
 	if (!(request = SteamWorks_CreateHTTPRequest(k_EHTTPMethodGET, newurl))
 	  || !SteamWorks_SetHTTPRequestAbsoluteTimeoutMS(request, 4000)
@@ -358,7 +378,7 @@ void ReloadWhitelistFile(bool groups=true)
 
 			gSM_WhitelistedGroups.SetValue(buffer, true);
 
-			if (memberproxy[0] == '\0' /*|| true*/)
+			if (memberproxy[0] != '\0' /*|| true*/)
 			{
 				PrintToServer("Ignoring Group ID %s because using member proxy...", buffer);
 				continue;
