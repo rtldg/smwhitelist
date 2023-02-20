@@ -60,7 +60,7 @@ public Plugin myinfo =
 	name = "generic whitelist",
 	author = "rtldg",
 	description = "A generic whitelist plugin.",
-	version = "1.2.1",
+	version = "1.2.2",
 	url = "https://github.com/rtldg/smwhitelist"
 }
 
@@ -229,7 +229,7 @@ public void RequestCompletedCallback(Handle request, bool bFailure, bool bReques
 	if (bFailure || !bRequestSuccessful || eStatusCode != k_EHTTPStatusCode200OK)
 	{
 		CreateTimer(20.0, Timer_ReloadWhitelist);
-		LogError("Group XML page request failed. Retrying in 20s...");
+		LogError("Group XML page request failed (fail=%d success=%d status=%d). Retrying in 20s...", bFailure, bRequestSuccessful, eStatusCode);
 		return;
 	}
 
@@ -241,8 +241,10 @@ public void RequestCompletedCallback(Handle request, bool bFailure, bool bReques
 
 void RequestGroupXml(const char[] url, const char[] groupid)
 {
+	char newurl[333];
+	FormatEx(newurl, sizeof(newurl), "%s&x=%d", url, GetURandomInt() % 69420); // cache-busting with query params
 	Handle request;
-	if (!(request = SteamWorks_CreateHTTPRequest(k_EHTTPMethodGET, url))
+	if (!(request = SteamWorks_CreateHTTPRequest(k_EHTTPMethodGET, newurl))
 	  || !SteamWorks_SetHTTPRequestAbsoluteTimeoutMS(request, 4000)
 	//|| !SteamWorks_SetHTTPRequestRequiresVerifiedCertificate(request, true)
 	  || !SteamWorks_SetHTTPCallbacks(request, RequestCompletedCallback)
