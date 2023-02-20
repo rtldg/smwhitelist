@@ -41,6 +41,7 @@ L 10/04/2022 - 15:20:16: [SM]   [1] Line 156, .\whitelist.sp::RequestCompletedCa
 Convar gCV_Enabled = null;
 Convar gCV_AllowAdmins = null;
 Convar gCV_KickMessage = null;
+Convar gCV_MemberProxy = null;
 ConVar sv_password = null;
 
 StringMap gSM_WhitelistedGroups = null;
@@ -60,7 +61,7 @@ public Plugin myinfo =
 	name = "generic whitelist",
 	author = "rtldg",
 	description = "A generic whitelist plugin.",
-	version = "1.2.2",
+	version = "1.2.3",
 	url = "https://github.com/rtldg/smwhitelist"
 }
 
@@ -92,6 +93,7 @@ public void OnPluginStart()
 	gCV_Enabled = new Convar("whitelist_enabled", "1", "Turn on or off the whitelist", 0, true, 0.0, true, 1.0);
 	gCV_AllowAdmins = new Convar("whitelist_allow_admins", "1", "Whether admins (with the ban flag) are allowed to join.", 0, true, 0.0, true, 1.0);
 	gCV_KickMessage = new Convar("whitelist_kick_message", "You are not in the server's whitelist", "The kick-message used.");
+	gCV_MemberProxy = new Convar("whitelist_member_proxy_url", "", "URL to hosted proxy https://github.com/srcwr/memberproxy-go", FCVAR_PROTECTED);
 
 	Convar.AutoExecConfig();
 
@@ -188,8 +190,32 @@ stock int SteamIDToAccountID(const char[] sInput)
 	return 0;
 }
 
+void ParseMemberProxy(const char[] data)
+{
+	int pos = 0;
+	while (data[pos] != '\0')
+	{
+		int end = StrContains(data[pos], " ", true);
+		if (end == -1) end = strlen(data[pos]);
+		end += 1;
+		char steamid[64];
+		strcopy(steamid, end, data[pos]);
+		pos += end;
+		AddAccountIDToWhitelist(SteamID64ToAccountID(steamid));
+	}
+}
+
 void ResponseBodyCallback(const char[] data, any hRequest)
 {
+	char memberproxy[2];
+	gCV_MemberProxy.GetString(memberproxy, sizeof(memberproxy));
+
+	if (memberproxy[0] != '\0')
+	{
+		ParseMemberProxy(data);
+		return;
+	}
+
 	// I would've loved to use regex instead of this horrible mess but Sourcemod's regex seems to be fucked and only gives me 20 matches in a 55 user group???
 
 	char searchopener[] = "<steamID64>";
@@ -287,6 +313,16 @@ void ReloadWhitelistFile(bool groups=true)
 		return;
 	}
 
+	char memberproxy[256];
+	gCV_MemberProxy.GetString(memberproxy, sizeof(memberproxy));
+
+	if (memberproxy[0] != '\0' /*|| true*/)
+	{
+		// ParseMemberProxy("76561197985607672 76561197960434622 76561198000613142 76561197960423941");
+		RequestGroupXml(memberproxy, "memberproxy");
+		gB_PulledLatest = false;
+	}
+
 	char buffer[256];
 
 	while (!fWhitelist.EndOfFile() && fWhitelist.ReadLine(buffer, sizeof(buffer)))
@@ -322,6 +358,12 @@ void ReloadWhitelistFile(bool groups=true)
 			IntToString(SteamID64ToAccountID(buffer), buffer, sizeof(buffer));
 
 			gSM_WhitelistedGroups.SetValue(buffer, true);
+
+			if (memberproxy[0] == '\0' /*|| true*/)
+			{
+				PrintToServer("Ignoring Group ID %s because using member proxy...", buffer);
+				continue;
+			}
 
 			char request_url[256];
 			FormatEx(request_url, sizeof(request_url),
