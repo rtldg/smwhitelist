@@ -61,7 +61,7 @@ public Plugin myinfo =
 	name = "generic whitelist",
 	author = "rtldg",
 	description = "A generic whitelist plugin.",
-	version = "1.2.3",
+	version = "1.2.4",
 	url = "https://github.com/rtldg/smwhitelist"
 }
 
@@ -195,13 +195,12 @@ void ParseMemberProxy(const char[] data)
 	int pos = 0;
 	while (data[pos] != '\0')
 	{
-		int end = StrContains(data[pos], " ", true);
-		if (end == -1) end = strlen(data[pos]);
-		end += 1;
+		int end = StrContains(data[pos], " ", true) + 1;
 		char steamid[64];
-		strcopy(steamid, end, data[pos]);
+		strcopy(steamid, end ? end : strlen(data[pos]), data[pos]);
 		pos += end;
 		AddAccountIDToWhitelist(SteamID64ToAccountID(steamid));
+		if (!end) return;
 	}
 }
 
