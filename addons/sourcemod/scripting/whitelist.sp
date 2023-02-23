@@ -23,8 +23,6 @@ L 10/04/2022 - 15:20:16: [SM]   [1] Line 156, .\whitelist.sp::RequestCompletedCa
 
 #include <sourcemod>
 
-#include <sourcemod>
-
 #include <convar_class>
 
 #define REQUIRE_EXTENSIONS
@@ -62,7 +60,7 @@ public Plugin myinfo =
 	name = "generic whitelist",
 	author = "rtldg",
 	description = "A generic whitelist plugin.",
-	version = "1.3.0",
+	version = "1.3.1",
 	url = "https://github.com/rtldg/smwhitelist"
 }
 
@@ -207,6 +205,12 @@ stock int SteamIDToAccountID(const char[] sInput)
 
 void ParseMemberProxy(const char[] data)
 {
+	if (StrContains(data, "s", false) != -1)
+	{
+		LogError("hmmm how did we get xml here?");
+		return;
+	}
+
 	int pos = 0;
 	while (data[pos] != '\0')
 	{
@@ -222,10 +226,10 @@ void ParseMemberProxy(const char[] data)
 
 void ResponseBodyCallback(const char[] data, any hRequest)
 {
-	char memberproxy[2];
+	char memberproxy[255];
 	gCV_MemberProxy.GetString(memberproxy, sizeof(memberproxy));
 
-	if (memberproxy[0] != '\0')
+	if (strlen(memberproxy) > 10)
 	{
 		ParseMemberProxy(data);
 		return;
@@ -335,7 +339,7 @@ void ReloadWhitelistFile(bool groups=true)
 	char memberproxy[256];
 	gCV_MemberProxy.GetString(memberproxy, sizeof(memberproxy));
 
-	if (memberproxy[0] != '\0' /*|| true*/)
+	if (groups && memberproxy[0] != '\0' /*|| true*/)
 	{
 		// ParseMemberProxy("76561197985607672 76561197960434622 76561198000613142 76561197960423941");
 		RequestGroupXml(memberproxy, "memberproxy");
