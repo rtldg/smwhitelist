@@ -8,14 +8,12 @@ this uses the connect extension (or PTaH on CS:GO) & also caches steamids from s
 create sourcemod/configs/whitelist.txt & fill it with steamids, ips, and group ids (an example exists at `addons/sourcemod/configs/whitelist.txt`)
 
 you need
-- SteamWorks https://github.com/KyleSanderson/SteamWorks/releases
-	- Windows builds: https://users.alliedmods.net/~kyles/builds/SteamWorks/
+- SteamWorks https://github.com/KyleSanderson/SteamWorks/releases (link to [linux latest](https://github.com/KyleSanderson/SteamWorks/releases/download/1.2.3c/package-lin.tgz))
+	- Windows builds: https://users.alliedmods.net/~kyles/builds/SteamWorks/ (link to [latest](https://users.alliedmods.net/~kyles/builds/SteamWorks/SteamWorks-git132-windows.zip))
 
 - CS:GO:
 	- PTaH
 		- https://github.com/komashchenko/PTaH
 		- https://ptah.zizt.ru/
 - CS:S
-	- the connect extension (Windows version already in repo)
-		- https://forums.alliedmods.net/showthread.php?t=162489&page=36#351
-		- for css rename this to `connect.ext.2.css.so`/`connect.ext.2.css.dll`
+	- the [connect](https://github.com/asherkin/connect) extension (binaries are included in the release zip)
