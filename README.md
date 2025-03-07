@@ -17,3 +17,4 @@ you need
 		- https://ptah.zizt.ru/
 - CS:S
 	- the [connect](https://github.com/asherkin/connect) extension (binaries are included in the release zip)
+		- the gamedata file is also copied to `gamedata/custom/connect.games.txt` because the extension's gamedata autoupdater is out of date lol
