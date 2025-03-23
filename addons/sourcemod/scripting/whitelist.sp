@@ -40,6 +40,7 @@ Convar gCV_Enabled = null;
 Convar gCV_AllowAdmins = null;
 Convar gCV_KickMessage = null;
 Convar gCV_MemberProxy = null;
+Convar gCV_AllowAnyPassword = null;
 ConVar sv_password = null;
 
 StringMap gSM_WhitelistedGroups = null;
@@ -91,9 +92,10 @@ public void OnPluginStart()
 	RegAdminCmd("sm_whitelistdel", Command_WhitelistDelete, ADMFLAG_ROOT, "desc");
 
 	gCV_Enabled = new Convar("whitelist_enabled", "1", "Turn on or off the whitelist", 0, true, 0.0, true, 1.0);
-	gCV_AllowAdmins = new Convar("whitelist_allow_admins", "1", "Whether admins (with the ban flag) are allowed to join.", 0, true, 0.0, true, 1.0);
+	gCV_AllowAdmins = new Convar("whitelist_allow_admins", "1", "Whether admins (with the ban flag) are allowed to join with any password.", 0, true, 0.0, true, 1.0);
 	gCV_KickMessage = new Convar("whitelist_kick_message", "You are not in the server's whitelist", "The kick-message used.");
 	gCV_MemberProxy = new Convar("whitelist_member_proxy_url", "", "URL to hosted proxy https://github.com/srcwr/memberproxy-go", FCVAR_PROTECTED);
+	gCV_AllowAnyPassword = new Convar("whitelist_allow_any_password", "1", "Whether twhitelisted players are allowed to join with any password.", 0, true, 0.0, true, 1.0);
 
 	Convar.AutoExecConfig();
 
@@ -147,19 +149,8 @@ void AddAccountIDToWhitelist(int accountid)
 
 stock int SteamID64ToAccountID(const char[] steamid64)
 {
-#if FOR_CSGO
 	int num[2];
 	StringToInt64(steamid64, num);
-#else
-	static KeyValues kv = null;
-
-	if (kv == null)
-		kv = new KeyValues("fuck sourcemod");
-
-	int num[2];
-	kv.SetString(NULL_STRING, steamid64);
-	kv.GetUInt64(NULL_STRING, num);
-#endif
 	return num[0];
 }
 
@@ -657,7 +648,8 @@ public Action ONCLIENTCONNECTPREFUCK(int account_id, const char[] ip, const char
 
 	if (gSM_WhitelistedIPs.GetValue(ip, asdf))
 	{
-		PrintToServer("Whitelisted IP");
+		PrintToServer("Whitelisted IP %s", ip);
+		if (gCV_AllowAnyPassword.BoolValue) { sv_password.GetString(password, sizeof(password)); return Plugin_Changed; }
 		return Plugin_Continue;
 	}
 
@@ -668,7 +660,8 @@ public Action ONCLIENTCONNECTPREFUCK(int account_id, const char[] ip, const char
 	{
 		if (gSM_WhitelistedSteamIDs.GetValue(buffer, asdf))
 		{
-			PrintToServer("Whitelisted SteamID");
+			PrintToServer("Whitelisted SteamID [U:1:%s]", buffer);
+			if (gCV_AllowAnyPassword.BoolValue) { sv_password.GetString(password, sizeof(password)); return Plugin_Changed; }
 			return Plugin_Continue;
 		}
 	}
@@ -676,12 +669,12 @@ public Action ONCLIENTCONNECTPREFUCK(int account_id, const char[] ip, const char
 	{
 		if (gSM_WhitelistedSteamIDsStale.GetValue(buffer, asdf))
 		{
-			PrintToServer("Whitelisted SteamID");
+			PrintToServer("Whitelisted SteamID [U:1:%s]", buffer);
+			if (gCV_AllowAnyPassword.BoolValue) { sv_password.GetString(password, sizeof(password)); return Plugin_Changed; }
 			return Plugin_Continue;
 		}
 	}
 
-#if 1
 	AccountIDToSteamID2(account_id, buffer, sizeof(buffer));
 	AdminId admin = FindAdminByIdentity(AUTHMETHOD_STEAM, buffer);
 
@@ -701,7 +694,6 @@ public Action ONCLIENTCONNECTPREFUCK(int account_id, const char[] ip, const char
 			return Plugin_Changed;
 		}
 	}
-#endif
 
 	gCV_KickMessage.GetString(rejectReason, sizeof(rejectReason));
 	return Plugin_Stop;
