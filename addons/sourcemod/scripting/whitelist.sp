@@ -95,7 +95,7 @@ public void OnPluginStart()
 	gCV_AllowAdmins = new Convar("whitelist_allow_admins", "1", "Whether admins (with the ban flag) are allowed to join with any password.", 0, true, 0.0, true, 1.0);
 	gCV_KickMessage = new Convar("whitelist_kick_message", "You are not in the server's whitelist", "The kick-message used.");
 	gCV_MemberProxy = new Convar("whitelist_member_proxy_url", "", "URL to hosted proxy https://github.com/srcwr/memberproxy-go", FCVAR_PROTECTED);
-	gCV_AllowAnyPassword = new Convar("whitelist_allow_any_password", "1", "Whether twhitelisted players are allowed to join with any password.", 0, true, 0.0, true, 1.0);
+	gCV_AllowAnyPassword = new Convar("whitelist_allow_any_password", "1", "Whether whitelisted players are allowed to join with any password.", 0, true, 0.0, true, 1.0);
 
 	Convar.AutoExecConfig();
 
