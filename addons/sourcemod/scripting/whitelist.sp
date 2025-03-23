@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright 2021-2023 rtldg <rtldg@protonmail.com>
+// Copyright 2021-2025 rtldg <rtldg@protonmail.com>
 
-#define FOR_CSGO 1
+#define FOR_CSGO 0
 
 // Added this because I'd occasionally get errors when SteamWorks tries
 // to push the response string...
@@ -61,7 +61,7 @@ public Plugin myinfo =
 	name = "generic whitelist",
 	author = "rtldg",
 	description = "A generic whitelist plugin.",
-	version = "1.3.1",
+	version = "1.4.0",
 	url = "https://github.com/rtldg/smwhitelist"
 }
 
