@@ -16,5 +16,4 @@ you need
 		- https://github.com/komashchenko/PTaH
 		- https://ptah.zizt.ru/
 - CS:S
-	- the [connect](https://github.com/asherkin/connect) extension (binaries are included in the release zip)
-		- the gamedata file is also copied to `gamedata/custom/connect.games.txt` because the extension's gamedata autoupdater is out of date lol
+	- the [connect](https://github.com/asherkin/connect) extension (builds at https://builds.limetech.io/?project=connect)
